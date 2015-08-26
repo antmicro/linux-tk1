@@ -1334,7 +1334,9 @@ static int v4l_enumstd(const struct v4l2_ioctl_ops *ops,
 	/* Return -ENODATA if the tvnorms for the current input
 	   or output is 0, meaning that it doesn't support this API. */
 	if (id == 0)
-		return -ENODATA;
+		/* this is a hack, after updating gstreamer
+		 * return to -ENODATA */
+		return -ENOTTY;
 
 	/* Return norm array in a canonical way */
 	for (i = 0; i <= index && id; i++) {
