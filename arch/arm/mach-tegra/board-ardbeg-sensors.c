@@ -364,6 +364,47 @@ static struct platform_device ardbeg_ap1302_soc_camera_device = {
 };
 #endif
 
+#if IS_ENABLED(CONFIG_SOC_CAMERA_OV5640)
+static int ardbeg_ov5640_power(struct device *dev, int enable)
+ {
+	if(enable) {
+		tegra_io_dpd_disable(&csia_io);
+	} else {
+		tegra_io_dpd_enable(&csia_io);
+	}
+	return 0;
+ }
+
+static struct i2c_board_info ardbeg_ov5640_camera_i2c_device = {
+	I2C_BOARD_INFO("ov5640", 0x3c),
+};
+
+static struct tegra_camera_platform_data ardbeg_ov5640_camera_platform_data = {
+	.flip_v			= 0,
+	.flip_h			= 0,
+	.port			= TEGRA_CAMERA_PORT_CSI_A,
+	.lanes			= 2,
+	.continuous_clk		= 0,
+};
+
+static struct soc_camera_link ov5640_iclink = {
+	.bus_id		= 0, /* This must match the .id of tegra_vi01_device */
+	.board_info	= &ardbeg_ov5640_camera_i2c_device,
+	.module_name	= "ov5640",
+	.i2c_adapter_id	= 2,
+	.power		= ardbeg_ov5640_power,
+	.priv		= &ardbeg_ov5640_camera_platform_data,
+};
+
+static struct platform_device ardbeg_ov5640_soc_camera_device = {
+	.name	= "soc-camera-pdrv",
+	.id	= 3,
+	.dev	= {
+		.platform_data = &ov5640_iclink,
+	},
+};
+#endif
+
 static struct regulator *ardbeg_vcmvdd;
 
 static int ardbeg_get_extra_regulators(void)
@@ -1563,6 +1604,9 @@ static int ardbeg_camera_init(void)
 #endif
 #if IS_ENABLED(CONFIG_SOC_CAMERA_AP1302)
 	platform_device_register(&ardbeg_ap1302_soc_camera_device);
+#endif
+#if IS_ENABLED(CONFIG_SOC_CAMERA_OV5640)
+	platform_device_register(&ardbeg_ov5640_soc_camera_device);
 #endif
 	return 0;
 }

@@ -132,7 +132,7 @@ static struct ov5640_reg mode_2592x1944[] = {
 	{0x300e, 0x45},
 	{0x302e, 0x08},
 	{0x4300, 0x32},
-	{0x4800, 0x24},
+	{0x4800, 0x4},
 	{0x4837, 0x0a},
 	{0x501f, 0x00},
 	{0x440e, 0x00},
@@ -396,7 +396,7 @@ static struct ov5640_reg mode_1920x1080[] = {
 	{0x440e, 0x00},
 	{0x460b, 0x37},
 	{0x460c, 0x20},
-	{0x4800, 0x24},
+	{0x4800, 0x4},
 	{0x4837, 0x0a},
 	{0x3824, 0x04},
 	{0x5000, 0xa7},
@@ -660,7 +660,7 @@ static struct ov5640_reg mode_1296x972[] = {
 	{0x440e, 0x00},
 	{0x460b, 0x37},
 	{0x460c, 0x20},
-	{0x4800, 0x24},
+	{0x4800, 0x4},
 	{0x4837, 0x10},
 	{0x3824, 0x04},
 	{0x5000, 0xa7},
@@ -1217,8 +1217,9 @@ static int ov5640_write_reg(struct i2c_client *client, u16 addr, u8 value)
 	msg[0].buf = data;
 
 	count = i2c_transfer(client->adapter, msg, ARRAY_SIZE(msg));
-	if (count == ARRAY_SIZE(msg))
+	if (count == ARRAY_SIZE(msg)) {
 		return 0;
+	}
 	dev_err(&client->dev,
 		"ov5840: i2c transfer failed, addr: %x, value: %02x\n",
 	       addr, (u32)value);
@@ -1365,12 +1366,12 @@ static int ov5640_s_power(struct v4l2_subdev *sd, int on)
 {
 	struct ov5640_priv *priv = to_ov5640(sd);
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
-	struct soc_camera_link *icl = soc_camera_i2c_to_link(client);
+	struct soc_camera_subdev_desc *scsd = soc_camera_i2c_to_desc(client);
 
 	if (on)
 		ov5640_s_fmt(sd, &priv->mf);
 
-	return soc_camera_set_power(&client->dev, icl, on);
+	return soc_camera_set_power(&client->dev, scsd, on);
 }
 
 static int ov5640_enum_fmt(struct v4l2_subdev *sd, unsigned int index,
@@ -1406,6 +1407,11 @@ static int ov5640_g_crop(struct v4l2_subdev *sd, struct v4l2_crop *a)
 	a->c.height		= ov5640_frmsizes[OV5640_MODE_2592x1944].height;
 	a->type			= V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
+	return 0;
+}
+
+static int ov5640_querystd(struct v4l2_subdev *sd, v4l2_std_id *std)
+{
 	return 0;
 }
 
@@ -1462,6 +1468,7 @@ static struct v4l2_subdev_video_ops ov5640_video_ops = {
 	.enum_mbus_fmt		= ov5640_enum_fmt,
 	.cropcap		= ov5640_cropcap,
 	.g_crop			= ov5640_g_crop,
+	.querystd 		= ov5640_querystd,
 };
 
 
@@ -1486,13 +1493,13 @@ static int ov5640_probe(struct i2c_client *client,
 			const struct i2c_device_id *did)
 {
 	struct ov5640_priv *priv;
-	struct soc_camera_link *icl;
+	struct soc_camera_subdev_desc *scsd;
 	u8 chip_id_hi, chip_id_lo;
 	int ret;
 
 	/* Checking soc-camera interface */
-	icl = soc_camera_i2c_to_link(client);
-	if (!icl) {
+	scsd = soc_camera_i2c_to_desc(client);
+	if (!scsd) {
 		dev_err(&client->dev, "Missing soc_camera_link for driver\n");
 		return -EINVAL;
 	}
@@ -1513,7 +1520,7 @@ static int ov5640_probe(struct i2c_client *client,
 	/*
 	 * check and show product ID and manufacturer ID
 	 */
-	soc_camera_power_on(&client->dev, icl);
+	soc_camera_power_on(&client->dev, scsd);
 	ret = ov5640_read_reg(client, 0x300A, &chip_id_hi);
 	if (ret < 0) {
 		dev_err(&client->dev, "Failure to read Chip ID (high byte)\n");
@@ -1534,7 +1541,7 @@ static int ov5640_probe(struct i2c_client *client,
 		ret = -ENODEV;
 		return ret;
 	}
-	soc_camera_power_off(&client->dev, icl);
+	soc_camera_power_off(&client->dev, scsd);
 
 	ov5640_set_default_fmt(priv);
 
