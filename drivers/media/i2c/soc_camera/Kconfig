@@ -121,3 +121,9 @@ config SOC_CAMERA_TC358743
 	depends on SOC_CAMERA && I2C
 	help
 	  This is a tc358743 video driver
+
+config SOC_CAMERA_ADV7280
+	tristate "adv7280m support"
+	depends on SOC_CAMERA && I2C
+	help
+	  This is a adv7280 video decoder driver
