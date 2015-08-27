@@ -405,6 +405,47 @@ static struct platform_device ardbeg_ov5640_soc_camera_device = {
 };
 #endif
 
+#if IS_ENABLED(CONFIG_SOC_CAMERA_TC358743)
+static int ardbeg_tc358743_power(struct device *dev, int enable)
+{
+	if(enable) {
+		tegra_io_dpd_disable(&csia_io);
+	} else {
+		tegra_io_dpd_enable(&csia_io);
+	}
+	return 0;
+}
+
+static struct i2c_board_info ardbeg_tc358743_camera_i2c_device = {
+	I2C_BOARD_INFO("tc358743", 0x0f),
+};
+
+static struct tegra_camera_platform_data ardbeg_tc358743_camera_platform_data = {
+	.flip_v			= 0,
+	.flip_h			= 0,
+	.port			= TEGRA_CAMERA_PORT_CSI_A,
+	.lanes			= 2,
+	.continuous_clk		= 0,
+};
+
+static struct soc_camera_link tc358743_iclink = {
+	.bus_id		= 0, /* This must match the .id of tegra_vi01_device */
+	.board_info	= &ardbeg_tc358743_camera_i2c_device,
+	.module_name	= "tc358743",
+	.i2c_adapter_id	= 2, /* change to 1 if you have auvidea's B100 HDMI to CSI-2 Bridge */
+	.power		= ardbeg_tc358743_power,
+	.priv		= &ardbeg_tc358743_camera_platform_data,
+};
+
+static struct platform_device ardbeg_tc358743_soc_camera_device = {
+	.name	= "soc-camera-pdrv",
+	.id	= 4,
+	.dev	= {
+		.platform_data = &tc358743_iclink,
+	},
+};
+#endif
+
 static struct regulator *ardbeg_vcmvdd;
 
 static int ardbeg_get_extra_regulators(void)
@@ -1607,6 +1648,9 @@ static int ardbeg_camera_init(void)
 #endif
 #if IS_ENABLED(CONFIG_SOC_CAMERA_OV5640)
 	platform_device_register(&ardbeg_ov5640_soc_camera_device);
+#endif
+#if IS_ENABLED(CONFIG_SOC_CAMERA_TC358743)
+	platform_device_register(&ardbeg_tc358743_soc_camera_device);
 #endif
 	return 0;
 }

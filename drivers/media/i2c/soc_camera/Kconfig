@@ -115,3 +115,9 @@ config SOC_CAMERA_TW9910
 	depends on SOC_CAMERA && I2C
 	help
 	  This is a tw9910 video driver
+
+config SOC_CAMERA_TC358743
+	tristate "tc358743 support"
+	depends on SOC_CAMERA && I2C
+	help
+	  This is a tc358743 video driver
